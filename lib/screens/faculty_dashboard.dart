@@ -10,11 +10,47 @@ class FacultyDashboard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(
-          "K.J Somaiya Polytechnic, Vidyavihar",
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+        title: Row(
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(20),
+                child: Image.asset(
+                  'assets/images/somaiyalogo.png',
+                  width: 40,
+                  height: 40,
+                  fit: BoxFit.cover,
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Text(
+              "K.J Somaiya Polytechnic, Vidyavihar",
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
         ),
         backgroundColor: Color(0xFFA50C22),
+        actions: [
+          Padding(
+            padding: EdgeInsets.only(right: 16),
+            child: Image.asset(
+              'assets/images/somaiya2.jpg',
+              width: 40,
+              height: 40,
+              fit: BoxFit.cover,
+            ),
+          ),
+        ],
       ),
       body: Row(
         mainAxisAlignment: MainAxisAlignment.start,

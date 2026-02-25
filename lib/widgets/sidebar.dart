@@ -7,9 +7,7 @@ class SideBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: const Color(
-        0xFF1F1F23,
-      ), // Dark blue-grey for contrast with app bar
+      color: const Color(0xFF3d4957), // Dark blue for sidebar
       child: Column(
         children: [
           // Profile Section
@@ -27,7 +25,7 @@ class SideBar extends StatelessWidget {
                   child: const Icon(
                     Icons.person,
                     size: 30,
-                    color: Color(0xFF1F1F23),
+                    color: Color(0xFF3d4957),
                   ),
                 ),
                 const SizedBox(height: 12),
@@ -79,7 +77,7 @@ class SideBar extends StatelessWidget {
               ),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.white,
-                foregroundColor: const Color(0xFF1F1F23),
+                foregroundColor: const Color(0xFF3d4957),
                 minimumSize: const Size(double.infinity, 45),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(8),
