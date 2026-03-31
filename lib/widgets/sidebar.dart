@@ -1,8 +1,26 @@
 // sidebar.dart
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class SideBar extends StatelessWidget {
-  const SideBar({super.key});
+  final String facultyName;
+  final String facultyId;
+  final String email;
+  final String department;
+  final String designation;
+  final int selectedIndex;
+  final Function(int) onItemTapped;
+
+  const SideBar({
+    super.key,
+    required this.facultyName,
+    required this.facultyId,
+    required this.email,
+    required this.department,
+    required this.designation,
+    required this.selectedIndex,
+    required this.onItemTapped,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -29,17 +47,17 @@ class SideBar extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 12),
-                const Text(
-                  "Manjiri Samant",
-                  style: TextStyle(
+                Text(
+                  facultyName,
+                  style: const TextStyle(
                     color: Colors.white,
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
-                const Text(
-                  "Faculty",
-                  style: TextStyle(color: Colors.white70, fontSize: 12),
+                Text(
+                  designation,
+                  style: const TextStyle(color: Colors.white70, fontSize: 12),
                 ),
               ],
             ),
@@ -50,16 +68,23 @@ class SideBar extends StatelessWidget {
             child: ListView(
               padding: EdgeInsets.zero,
               children: [
-                _buildMenuItem(icon: Icons.home, title: "Home", onTap: () {}),
+                _buildMenuItem(
+                  icon: Icons.home,
+                  title: "Home",
+                  onTap: () => onItemTapped(0),
+                  isSelected: selectedIndex == 0,
+                ),
                 _buildMenuItem(
                   icon: Icons.group,
                   title: "Batches",
-                  onTap: () {},
+                  onTap: () => onItemTapped(1),
+                  isSelected: selectedIndex == 1,
                 ),
                 _buildMenuItem(
                   icon: Icons.book,
                   title: "Courses",
-                  onTap: () {},
+                  onTap: () => onItemTapped(2),
+                  isSelected: selectedIndex == 2,
                 ),
               ],
             ),
@@ -69,10 +94,19 @@ class SideBar extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(20),
             child: ElevatedButton.icon(
-              onPressed: () {},
+              onPressed: () async {
+                final prefs = await SharedPreferences.getInstance();
+                await prefs.clear();
+
+                if (context.mounted) {
+                  Navigator.of(
+                    context,
+                  ).pushNamedAndRemoveUntil('/', (route) => false);
+                }
+              },
               icon: const Icon(Icons.logout, size: 18),
               label: const Text(
-                "Log Out",
+                "Logout",
                 style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
               ),
               style: ElevatedButton.styleFrom(
@@ -95,6 +129,7 @@ class SideBar extends StatelessWidget {
     required IconData icon,
     required String title,
     required VoidCallback onTap,
+    required bool isSelected,
   }) {
     return Column(
       children: [
@@ -102,16 +137,30 @@ class SideBar extends StatelessWidget {
           onTap: onTap,
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+            decoration: BoxDecoration(
+              color: isSelected
+                  ? Colors.white.withOpacity(0.1)
+                  : Colors.transparent,
+              border: isSelected
+                  ? const Border(
+                      left: BorderSide(color: Colors.white, width: 3),
+                    )
+                  : null,
+            ),
             child: Row(
               children: [
-                Icon(icon, color: Colors.white, size: 20),
+                Icon(
+                  icon,
+                  color: isSelected ? Colors.white : Colors.white70,
+                  size: 20,
+                ),
                 const SizedBox(width: 16),
                 Text(
                   title,
-                  style: const TextStyle(
-                    color: Colors.white,
+                  style: TextStyle(
+                    color: isSelected ? Colors.white : Colors.white70,
                     fontSize: 14,
-                    fontWeight: FontWeight.w500,
+                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
                   ),
                 ),
               ],
