@@ -169,17 +169,20 @@ class _MainContentState extends State<MainContent> {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      color: const Color(0xFFF5F6F8),
-      padding: const EdgeInsets.all(24),
-      child: Row(
-        children: [
-          // Lecture Information Card
-          Expanded(flex: 2, child: _buildLectureInformationCard()),
-          const SizedBox(width: 24),
-          // Attendance Overview Card
-          Expanded(flex: 3, child: _buildAttendanceOverviewCard()),
-        ],
+    return SingleChildScrollView(
+      child: Container(
+        color: const Color(0xFFF5F6F8),
+        padding: const EdgeInsets.all(24),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Lecture Information Card
+            Expanded(flex: 2, child: _buildLectureInformationCard()),
+            const SizedBox(width: 24),
+            // Attendance Overview Card
+            Expanded(flex: 3, child: _buildAttendanceOverviewCard()),
+          ],
+        ),
       ),
     );
   }

@@ -1,8 +1,110 @@
 // batches_screen.dart
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import '../services/api_service.dart';
 
-class BatchesScreen extends StatelessWidget {
+class BatchesScreen extends StatefulWidget {
   const BatchesScreen({super.key});
+
+  @override
+  State<BatchesScreen> createState() => _BatchesScreenState();
+}
+
+class _BatchesScreenState extends State<BatchesScreen> {
+  String? _facultyId;
+  List<dynamic> _batches = [];
+  bool _isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadFacultyId();
+  }
+
+  Future<void> _loadFacultyId() async {
+    final prefs = await SharedPreferences.getInstance();
+    final facultyId = prefs.getString('faculty_id');
+    print('Debug: Faculty ID from SharedPreferences: $facultyId'); // Debug line
+
+    setState(() {
+      _facultyId = facultyId;
+    });
+
+    if (_facultyId != null && _facultyId!.isNotEmpty) {
+      _loadBatches();
+    } else {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('No faculty ID found. Please login again.'),
+            backgroundColor: Colors.red,
+            duration: Duration(seconds: 3),
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _loadBatches() async {
+    if (_facultyId == null || _facultyId!.isEmpty) return;
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      print(
+        'Debug: Fetching batches for faculty_id: $_facultyId',
+      ); // Debug line
+      final batches = await ApiService.getBatches(_facultyId!);
+      print('Debug: Batches received: $batches'); // Debug line
+
+      // Fetch student count for each batch
+      List<Map<String, dynamic>> batchesWithCounts = [];
+      for (var batch in batches) {
+        try {
+          final countData = await ApiService.getStudentCount(batch['code']);
+          final batchWithCount = Map<String, dynamic>.from(batch);
+          batchWithCount['students'] = countData['student_count'] ?? 0;
+          batchesWithCounts.add(batchWithCount);
+          print(
+            'Debug: Batch ${batch['code']} has ${countData['student_count']} students',
+          );
+        } catch (e) {
+          print('Debug: Failed to get count for batch ${batch['code']}: $e');
+          // Add batch with 0 students if count fetch fails
+          final batchWithCount = Map<String, dynamic>.from(batch);
+          batchWithCount['students'] = 0;
+          batchesWithCounts.add(batchWithCount);
+        }
+      }
+
+      if (mounted) {
+        setState(() {
+          _batches = batchesWithCounts;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      print('Debug: Error loading batches: $e'); // Debug line
+      if (mounted) {
+        setState(() {
+          _batches = [];
+          _isLoading = false;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to load batches: ${e.toString()}'),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -34,33 +136,21 @@ class BatchesScreen extends StatelessWidget {
 
             // Batches List
             Expanded(
-              child: ListView(
-                children: [
-                  _buildBatchCard(
-                    context,
-                    'FYCO',
-                    'First Year Computer Engineering',
-                    'Students: 63',
-                    const Color.fromARGB(255, 16, 37, 176),
-                  ),
-                  const SizedBox(height: 16),
-                  _buildBatchCard(
-                    context,
-                    'SYCO',
-                    'Second Year Computer Engineering',
-                    'Students: 58',
-                    const Color.fromARGB(255, 16, 37, 176),
-                  ),
-                  const SizedBox(height: 16),
-                  _buildBatchCard(
-                    context,
-                    'TYCO',
-                    'Third Year Computer Engineering',
-                    'Students: 55',
-                    const Color.fromARGB(255, 16, 37, 176),
-                  ),
-                ],
-              ),
+              child: _isLoading
+                  ? const Center(child: CircularProgressIndicator())
+                  : ListView.builder(
+                      itemCount: _batches.length,
+                      itemBuilder: (context, index) {
+                        final batch = _batches[index];
+                        return _buildBatchCard(
+                          context,
+                          batch['code'],
+                          batch['name'],
+                          'Students: ${batch['students']}',
+                          const Color.fromARGB(255, 16, 37, 176),
+                        );
+                      },
+                    ),
             ),
           ],
         ),
@@ -78,34 +168,25 @@ class BatchesScreen extends StatelessWidget {
     return Card(
       elevation: 2,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(16),
         side: const BorderSide(color: Color(0xFFE0E0E0), width: 1),
       ),
       child: Container(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.all(24),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Batch Header
+            // Batch Code and Icon
             Row(
               children: [
                 Container(
-                  width: 60,
-                  height: 60,
+                  width: 50,
+                  height: 50,
                   decoration: BoxDecoration(
-                    color: batchColor,
+                    color: batchColor.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: Center(
-                    child: Text(
-                      batchCode,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
+                  child: Icon(Icons.group, size: 24, color: batchColor),
                 ),
                 const SizedBox(width: 16),
                 Expanded(
@@ -113,10 +194,10 @@ class BatchesScreen extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        batchName,
+                        batchCode,
                         style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w600,
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
                           color: Colors.black87,
                         ),
                       ),
@@ -132,57 +213,16 @@ class BatchesScreen extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             const Divider(),
-            const SizedBox(height: 12),
+            const SizedBox(height: 16),
 
-            // Batch Actions
-            Row(
-              children: [
-                Expanded(
-                  child: ElevatedButton.icon(
-                    onPressed: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text('Managing $batchCode students...'),
-                          backgroundColor: batchColor.withOpacity(0.8),
-                        ),
-                      );
-                    },
-                    icon: const Icon(Icons.people, size: 18),
-                    label: const Text('View Students'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: batchColor.withOpacity(0.8),
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: ElevatedButton.icon(
-                    onPressed: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Opening attendance records...'),
-                          backgroundColor: Color(0xFF0D47A1),
-                        ),
-                      );
-                    },
-                    icon: const Icon(Icons.download, size: 18),
-                    label: const Text('Download Attendance'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF0D47A1),
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
+            // Batch Name
+            Text(
+              batchName,
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+                color: Colors.black87,
+              ),
             ),
           ],
         ),

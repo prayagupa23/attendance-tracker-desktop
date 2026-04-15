@@ -10,6 +10,7 @@ class SideBar extends StatelessWidget {
   final String designation;
   final int selectedIndex;
   final Function(int) onItemTapped;
+  final VoidCallback? onRefresh; // Added refresh callback
 
   const SideBar({
     super.key,
@@ -20,6 +21,7 @@ class SideBar extends StatelessWidget {
     required this.designation,
     required this.selectedIndex,
     required this.onItemTapped,
+    this.onRefresh, // Optional refresh callback
   });
 
   @override
@@ -86,6 +88,47 @@ class SideBar extends StatelessWidget {
                   onTap: () => onItemTapped(2),
                   isSelected: selectedIndex == 2,
                 ),
+                _buildMenuItem(
+                  icon: Icons.schedule,
+                  title: "Timetable",
+                  onTap: () => onItemTapped(3),
+                  isSelected: selectedIndex == 3,
+                ),
+                _buildMenuItem(
+                  icon: Icons.person,
+                  title: "My Timetable",
+                  onTap: () => onItemTapped(4),
+                  isSelected: selectedIndex == 4,
+                ),
+
+                // Refresh Button
+                if (onRefresh != null) ...[
+                  const SizedBox(height: 20),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: ElevatedButton.icon(
+                      onPressed: onRefresh,
+                      icon: const Icon(Icons.refresh, size: 18),
+                      label: const Text(
+                        "Refresh",
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFFA50C22),
+                        foregroundColor: Colors.white,
+                        minimumSize: const Size(double.infinity, 45),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        elevation: 2,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                ],
               ],
             ),
           ),
