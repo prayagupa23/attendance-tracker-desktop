@@ -19,7 +19,7 @@ class _MainContentState extends State<MainContent> {
   bool _isLoadingAttendance = false;
   Timer? _sessionTimer;
   String? _currentSessionId;
-  int _remainingSeconds = 600; // 10 minutes in seconds
+  int _remainingSeconds = 60; // 1 minute in seconds
   bool _isSessionActive = false; // Track if session is currently active
 
   @override
@@ -127,7 +127,7 @@ class _MainContentState extends State<MainContent> {
 
   void _startSessionTimer() {
     setState(() {
-      _remainingSeconds = 600; // 10 minutes
+      _remainingSeconds = 60; // 1 minute
     });
 
     _sessionTimer = Timer.periodic(const Duration(seconds: 1), (timer) {

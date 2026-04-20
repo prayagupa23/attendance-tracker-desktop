@@ -43,7 +43,7 @@ class _FacultyDashboardState extends State<FacultyDashboard> {
   String? _currentSessionId;
   bool _isSessionActive = false;
   Timer? _sessionTimer;
-  int _remainingSeconds = 600; // 10 minutes in seconds
+  int _remainingSeconds = 60; // 1 minute in seconds
   List<dynamic>? _attendanceData;
   bool _isLoadingAttendance = false;
 
@@ -1014,7 +1014,7 @@ class _FacultyDashboardState extends State<FacultyDashboard> {
 
   void _startSessionTimer() {
     setState(() {
-      _remainingSeconds = 600; // 10 minutes
+      _remainingSeconds = 60; // 1 minute
     });
 
     _sessionTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
@@ -1024,7 +1024,7 @@ class _FacultyDashboardState extends State<FacultyDashboard> {
         });
       } else {
         _sessionTimer?.cancel();
-        // Fetch attendance data when 10 minutes are up
+        // Fetch attendance data when 1 minute is up
         _fetchAttendanceData();
       }
     });
