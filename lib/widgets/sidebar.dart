@@ -100,6 +100,12 @@ class SideBar extends StatelessWidget {
                   onTap: () => onItemTapped(4),
                   isSelected: selectedIndex == 4,
                 ),
+                _buildMenuItem(
+                  icon: Icons.warning_amber_outlined,
+                  title: "Defaulter",
+                  onTap: () => onItemTapped(5),
+                  isSelected: selectedIndex == 5,
+                ),
 
                 // Refresh Button
                 if (onRefresh != null) ...[

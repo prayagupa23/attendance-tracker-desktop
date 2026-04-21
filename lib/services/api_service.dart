@@ -244,4 +244,64 @@ class ApiService {
       throw Exception(data["error"] ?? "Failed to fetch timetable");
     }
   }
+
+  // Get students for lab batch and year from database
+  static Future<List<dynamic>> getStudentsForLabBatch({
+    required String year, // Changed from batch to year
+    required String labBatch,
+  }) async {
+    // Use the correct endpoint provided by user
+    final url = Uri.parse("$baseUrl/students?year=$year&lab_batch=$labBatch");
+    
+    try {
+      print('Debug: Fetching students from database: $url');
+
+      final response = await http.get(
+        url,
+        headers: {"Content-Type": "application/json"},
+      ).timeout(const Duration(seconds: 15));
+
+      print('Debug: Response status: ${response.statusCode}');
+
+      if (response.statusCode == 200) {
+        // Check if response is HTML (error page)
+        if (response.body.toLowerCase().contains('<!doctype') || 
+            response.body.toLowerCase().contains('<html')) {
+          print('Debug: Received HTML error page');
+          throw Exception('Server returned HTML error page instead of JSON');
+        }
+
+        final data = jsonDecode(response.body);
+        print('Debug: Database response for $year - $labBatch: ${data.runtimeType}');
+
+        // Parse different possible response formats from database
+        if (data is Map<String, dynamic>) {
+          if (data['success'] == true && data['data'] != null) {
+            final students = data['data'] as List<dynamic>;
+            print('Debug: Found ${students.length} students from database');
+            return students;
+          } else if (data.containsKey('students')) {
+            final students = data['students'] as List<dynamic>;
+            print('Debug: Found ${students.length} students from database');
+            return students;
+          } else if (data.containsKey('data')) {
+            final students = data['data'] as List<dynamic>;
+            print('Debug: Found ${students.length} students from database');
+            return students;
+          }
+        } else if (data is List<dynamic>) {
+          print('Debug: Found ${data.length} students from database');
+          return data;
+        }
+        
+        throw Exception('Unexpected response format from database');
+      } else {
+        print('Debug: HTTP ${response.statusCode} error from database');
+        throw Exception('HTTP ${response.statusCode}: Failed to fetch student data');
+      }
+    } catch (e) {
+      print('Debug: Database connection error: $e');
+      throw Exception('Unable to fetch student data from database: $e');
+    }
+  }
 }

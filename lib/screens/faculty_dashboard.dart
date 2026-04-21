@@ -8,6 +8,7 @@ import 'package:final_year_project_desktop/screens/courses_screen.dart';
 import 'package:final_year_project_desktop/screens/batches_screen.dart';
 import 'package:final_year_project_desktop/screens/timetable_screen.dart';
 import 'package:final_year_project_desktop/screens/my_timetable_screen.dart';
+import 'package:final_year_project_desktop/screens/defaulter_screen.dart';
 import 'package:final_year_project_desktop/services/api_service.dart';
 
 class FacultyDashboard extends StatefulWidget {
@@ -52,6 +53,7 @@ class _FacultyDashboardState extends State<FacultyDashboard> {
     const CoursesScreen(),
     const TimetableScreen(),
     const MyTimetableScreen(),
+    const DefaulterScreen(),
   ];
 
   @override

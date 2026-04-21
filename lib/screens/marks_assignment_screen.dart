@@ -4,11 +4,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:excel/excel.dart' as xl;
 import 'package:path_provider/path_provider.dart';
+import '../services/api_service.dart';
 
 class MarksAssignmentScreen extends StatefulWidget {
   final String courseCode;
   final String courseName;
   final String? labBatch;
+  final String year; // Added year parameter for API call
   final VoidCallback onBackPressed;
 
   const MarksAssignmentScreen({
@@ -16,6 +18,7 @@ class MarksAssignmentScreen extends StatefulWidget {
     required this.courseCode,
     required this.courseName,
     this.labBatch,
+    required this.year,
     required this.onBackPressed,
   });
 
@@ -25,6 +28,9 @@ class MarksAssignmentScreen extends StatefulWidget {
 
 class _MarksAssignmentScreenState extends State<MarksAssignmentScreen> {
   String? selectedSession;
+  List<Map<String, dynamic>> _students = [];
+  bool _isLoadingStudents = false;
+  String? _studentsError;
 
   final List<TextEditingController> marks2Controllers = List.generate(
     15,
@@ -40,6 +46,14 @@ class _MarksAssignmentScreenState extends State<MarksAssignmentScreen> {
   );
 
   @override
+  void initState() {
+    super.initState();
+    if (widget.labBatch != null) {
+      _fetchStudents();
+    }
+  }
+
+  @override
   void dispose() {
     for (final c in [
       ...marks2Controllers,
@@ -49,6 +63,32 @@ class _MarksAssignmentScreenState extends State<MarksAssignmentScreen> {
       c.dispose();
     }
     super.dispose();
+  }
+
+  Future<void> _fetchStudents() async {
+    if (widget.labBatch == null) return;
+
+    setState(() {
+      _isLoadingStudents = true;
+      _studentsError = null;
+    });
+
+    try {
+      final studentsData = await ApiService.getStudentsForLabBatch(
+        year: widget.year, // Use year parameter for API call
+        labBatch: widget.labBatch!,
+      );
+
+      setState(() {
+        _students = studentsData.map((student) => student as Map<String, dynamic>).toList();
+        _isLoadingStudents = false;
+      });
+    } catch (e) {
+      setState(() {
+        _studentsError = e.toString();
+        _isLoadingStudents = false;
+      });
+    }
   }
 
   Future<void> _exportToExcel() async {
@@ -183,7 +223,8 @@ class _MarksAssignmentScreenState extends State<MarksAssignmentScreen> {
     }
 
     // Rows 4–18: Student data
-    for (int i = 0; i < 15; i++) {
+    final studentCount = _students.length > 15 ? 15 : _students.length;
+    for (int i = 0; i < studentCount; i++) {
       final rowIndex = 4 + i;
       final excelRow = rowIndex + 1; // Excel is 1-indexed
       final isEven = i % 2 == 0;
@@ -200,9 +241,22 @@ class _MarksAssignmentScreenState extends State<MarksAssignmentScreen> {
           ..cellStyle = rowStyle(isEven, leftAlign: left);
       }
 
+      // Get real student data if available
+      String rollNumber = '';
+      String studentName = '';
+      if (i < _students.length) {
+        final student = _students[i];
+        rollNumber = student['roll_number']?.toString() ?? '';
+        studentName = student['name']?.toString() ?? 'Unknown';
+      } else {
+        // Fallback to placeholder data
+        rollNumber = 'O23RC${23 + i}';
+        studentName = 'Student ${i + 1}';
+      }
+
       set(0, xl.IntCellValue(i + 1));
-      set(1, xl.TextCellValue('O23RC${23 + i}'));
-      set(2, xl.TextCellValue('Student ${i + 1}'), left: true);
+      set(1, xl.TextCellValue(rollNumber));
+      set(2, xl.TextCellValue(studentName), left: true);
       set(
         3,
         m2.isNotEmpty ? xl.IntCellValue(int.parse(m2)) : xl.TextCellValue(''),
@@ -508,52 +562,155 @@ class _MarksAssignmentScreenState extends State<MarksAssignmentScreen> {
                       ),
                     ),
                     Expanded(
-                      child: ListView.builder(
-                        itemCount: 15,
-                        itemBuilder: (context, index) {
-                          return Container(
-                            height: 50,
-                            padding: const EdgeInsets.symmetric(horizontal: 16),
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              border: Border(
-                                bottom: BorderSide(
-                                  color: Colors.grey[200]!,
-                                  width: 1,
-                                ),
+                      child: _isLoadingStudents
+                          ? const Center(
+                              child: CircularProgressIndicator(
+                                valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFA50C22)),
                               ),
-                            ),
-                            child: Row(
-                              children: [
-                                Expanded(
-                                  flex: 2,
-                                  child: Text(
-                                    'O23RC${23 + index}',
-                                    style: const TextStyle(
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w500,
-                                      color: Colors.black87,
+                            )
+                          : _studentsError != null
+                              ? Center(
+                                  child: SingleChildScrollView(
+                                    child: Column(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: [
+                                        Icon(
+                                          Icons.error_outline,
+                                          size: 40,
+                                          color: Colors.red[400],
+                                        ),
+                                        const SizedBox(height: 12),
+                                        Text(
+                                          'Failed to load students',
+                                          style: TextStyle(
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.w600,
+                                            color: Colors.grey[800],
+                                          ),
+                                        ),
+                                        const SizedBox(height: 6),
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                                          child: Text(
+                                            _studentsError!,
+                                            style: TextStyle(
+                                              fontSize: 12,
+                                              color: Colors.grey[600],
+                                            ),
+                                            textAlign: TextAlign.center,
+                                            maxLines: 3,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 12),
+                                        ElevatedButton.icon(
+                                          onPressed: _fetchStudents,
+                                          icon: const Icon(Icons.refresh, size: 16),
+                                          label: const Text('Retry'),
+                                          style: ElevatedButton.styleFrom(
+                                            backgroundColor: const Color(0xFFA50C22),
+                                            foregroundColor: Colors.white,
+                                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                          ),
+                                        ),
+                                      ],
                                     ),
                                   ),
+                                )
+                              : ListView.builder(
+                                  itemCount: _students.length > 15 ? 15 : _students.length,
+                                  itemBuilder: (context, index) {
+                                    if (index >= _students.length) {
+                                      return Container(
+                                        height: 50,
+                                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                                        decoration: BoxDecoration(
+                                          color: Colors.grey[50],
+                                          border: Border(
+                                            bottom: BorderSide(
+                                              color: Colors.grey[200]!,
+                                              width: 1,
+                                            ),
+                                          ),
+                                        ),
+                                        child: Row(
+                                          children: [
+                                            Expanded(
+                                              flex: 2,
+                                              child: Text(
+                                                '',
+                                                style: const TextStyle(
+                                                  fontSize: 12,
+                                                  fontWeight: FontWeight.w500,
+                                                  color: Colors.black87,
+                                                ),
+                                              ),
+                                            ),
+                                            Expanded(
+                                              flex: 3,
+                                              child: Text(
+                                                'No student data',
+                                                style: const TextStyle(
+                                                  fontSize: 12,
+                                                  color: Colors.grey,
+                                                ),
+                                              ),
+                                            ),
+                                            _markField(marks2Controllers[index], '0-2', 2),
+                                            _markField(marks3Controllers[index], '0-3', 3),
+                                            _markField(marks5Controllers[index], '0-5', 5),
+                                          ],
+                                        ),
+                                      );
+                                    }
+
+                                    final student = _students[index];
+                                    final rollNumber = student['roll_number']?.toString() ?? '';
+                                    final studentName = student['name']?.toString() ?? 'Unknown';
+
+                                    return Container(
+                                      height: 50,
+                                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                                      decoration: BoxDecoration(
+                                        color: Colors.white,
+                                        border: Border(
+                                          bottom: BorderSide(
+                                            color: Colors.grey[200]!,
+                                            width: 1,
+                                          ),
+                                        ),
+                                      ),
+                                      child: Row(
+                                        children: [
+                                          Expanded(
+                                            flex: 2,
+                                            child: Text(
+                                              rollNumber,
+                                              style: const TextStyle(
+                                                fontSize: 12,
+                                                fontWeight: FontWeight.w500,
+                                                color: Colors.black87,
+                                              ),
+                                            ),
+                                          ),
+                                          Expanded(
+                                            flex: 3,
+                                            child: Text(
+                                              studentName,
+                                              style: const TextStyle(
+                                                fontSize: 12,
+                                                color: Colors.black87,
+                                              ),
+                                            ),
+                                          ),
+                                          _markField(marks2Controllers[index], '0-2', 2),
+                                          _markField(marks3Controllers[index], '0-3', 3),
+                                          _markField(marks5Controllers[index], '0-5', 5),
+                                        ],
+                                      ),
+                                    );
+                                  },
                                 ),
-                                Expanded(
-                                  flex: 3,
-                                  child: Text(
-                                    'Student ${index + 1}',
-                                    style: const TextStyle(
-                                      fontSize: 12,
-                                      color: Colors.black87,
-                                    ),
-                                  ),
-                                ),
-                                _markField(marks2Controllers[index], '0-2', 2),
-                                _markField(marks3Controllers[index], '0-3', 3),
-                                _markField(marks5Controllers[index], '0-5', 5),
-                              ],
-                            ),
-                          );
-                        },
-                      ),
                     ),
                   ],
                 ),
