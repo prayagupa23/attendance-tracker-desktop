@@ -96,6 +96,7 @@ class _CoursesScreenState extends State<CoursesScreen> {
         courseCode: _selectedCourse!.batch,
         courseName: _selectedCourse!.courseName,
         labBatch: _selectedCourse!.labBatch,
+        year: _selectedCourse!.batch, // Pass batch as year parameter
         onBackPressed: () {
           setState(() {
             _showMarksScreen = false;
